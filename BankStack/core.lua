@@ -13,6 +13,19 @@ BINDING_NAME_BANKSTACK = L['BINDING_NAME_BANKSTACK']
 BINDING_NAME_COMPRESS = L['BINDING_NAME_COMPRESS']
 BINDING_NAME_BAGSORT = L['BINDING_NAME_BAGSORT']
 
+function core:EnsureReagentSortBinding()
+	local binds = self.db and self.db.fubar_keybinds
+	if not binds then return end
+	for _, action in pairs(binds) do
+		if action == "sortreagent" then
+			return
+		end
+	end
+	if not binds["CTRL-SHIFT-BUTTON1"] then
+		binds["CTRL-SHIFT-BUTTON1"] = "sortreagent"
+	end
+end
+
 function core:OnInitialize()
 	local oldDB
 	if BankStackDB and not BankStackDB.profileKeys then
@@ -37,7 +50,7 @@ function core:OnInitialize()
 				['ALT-CTRL-BUTTON1'] = 'compressbank',
 				['SHIFT-BUTTON1'] = 'stackbank',
 				['ALT-SHIFT-BUTTON1'] = 'stackbags',
-				['CTRL-SHIFT-BUTTON1'] = false,
+				['CTRL-SHIFT-BUTTON1'] = 'sortreagent',
 				['ALT-CTRL-SHIFT-BUTTON1'] = false,
 			},
 			conservative_guild = true,
@@ -46,6 +59,7 @@ function core:OnInitialize()
 	self.db = self.db_object.profile
 	self.db_object.RegisterCallback(self, "OnProfileChanged", function()
 		self.db = self.db_object.profile
+		self:EnsureReagentSortBinding()
 	end)
 
 	if oldDB then
@@ -61,6 +75,8 @@ function core:OnInitialize()
 		end
 		copy(oldDB, self.db)
 	end
+
+	self:EnsureReagentSortBinding()
 
 	if self.setup_config then
 		self.setup_config()
@@ -101,6 +117,8 @@ for i = NUM_BAG_SLOTS+1, NUM_BAG_SLOTS+NUM_BANKBAGSLOTS do
 	table.insert(bank_bags, i)
 end
 core.bank_bags = bank_bags
+local reagent_bags = {REAGENTBANK_CONTAINER}
+core.reagent_bags = reagent_bags
 local player_bags = {}
 for i = 0, NUM_BAG_SLOTS do
 	table.insert(player_bags, i)
@@ -116,6 +134,7 @@ core.guild = guild
 local all_bags_with_guild = {}
 for _,bag in ipairs(all_bags) do table.insert(all_bags_with_guild, bag) end
 for _,bag in ipairs(guild) do table.insert(all_bags_with_guild, bag) end
+for _,bag in ipairs(reagent_bags) do table.insert(all_bags_with_guild, bag) end
 core.all_bags_with_guild = all_bags_with_guild
 
 local function is_valid_bag(bagid)
@@ -123,7 +142,7 @@ local function is_valid_bag(bagid)
 end
 core.is_valid_bag = is_valid_bag
 local function is_bank_bag(bagid)
-	return (bagid == BANK_CONTAINER or (bagid > NUM_BAG_SLOTS and bagid <= NUM_BANKBAGSLOTS))
+	return (bagid == BANK_CONTAINER or bagid == REAGENTBANK_CONTAINER or (bagid > NUM_BAG_SLOTS and bagid <= NUM_BANKBAGSLOTS))
 end
 core.is_bank_bag = is_bank_bag
 local function is_guild_bank_bag(bagid)
@@ -145,6 +164,7 @@ local core_groups = {
 	guild4 = {54,},
 	guild5 = {55,},
 	guild6 = {56,},
+	reagent = reagent_bags,
 }
 core.groups = core_groups
 function core.get_group(id)
@@ -337,6 +357,16 @@ function core.SplitItem(bag, slot, amount)
 end
 
 function core.CanItemGoInBag(item, bag)
+	if bag == REAGENTBANK_CONTAINER then
+		local itemID = item
+		if type(itemID) == "string" then
+			itemID = tonumber(string.match(itemID, "item:(%d+)"))
+		end
+		if type(IsReagentItem) == "function" then
+			return itemID and IsReagentItem(itemID) or false
+		end
+		return true
+	end
 	if is_guild_bank_bag(bag) then
 		-- almost anything can go in a guild bank... apart from:
 		if
@@ -591,7 +621,7 @@ do
 		[0]=true,
 	}
 	function core.IsSpecialtyBag(bagid)
-		if safe[bagid] or is_guild_bank_bag(bagid) then return false end
+		if safe[bagid] or is_guild_bank_bag(bagid) or bagid == REAGENTBANK_CONTAINER then return false end
 		local invslot = ContainerIDToInventoryID(bagid)
 		if not invslot then return false end
 		local bag = GetInventoryItemLink("player", invslot)
