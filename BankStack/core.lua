@@ -220,7 +220,7 @@ do
 			if not link:match("item:") then
 				link = "item:"..link
 			end
-			tooltop:SetHyperLink(link)
+			tooltip:SetHyperlink(link)
 		elseif is_guild_bank_bag(bag) then
 			tooltip:SetGuildBankItem(bag-50, slot)
 		else
@@ -356,7 +356,7 @@ function core.SplitItem(bag, slot, amount)
 	end
 end
 
-function core.CanItemGoInBag(item, bag)
+function core.CanItemGoInBag(item, bag, from_bag, from_slot)
 	if bag == REAGENTBANK_CONTAINER then
 		local itemID = item
 		if type(itemID) == "string" then
@@ -369,12 +369,13 @@ function core.CanItemGoInBag(item, bag)
 	end
 	if is_guild_bank_bag(bag) then
 		-- almost anything can go in a guild bank... apart from:
+		local tip_bag, tip_slot = from_bag or false, from_slot or item
 		if
-			core.CheckTooltipFor(false, item, ITEM_SOULBOUND)
+			core.CheckTooltipFor(tip_bag, tip_slot, ITEM_SOULBOUND)
 			or
-			core.CheckTooltipFor(false, item, ITEM_CONJURED)
+			core.CheckTooltipFor(tip_bag, tip_slot, ITEM_CONJURED)
 			or
-			core.CheckTooltipFor(false, item, ITEM_BIND_QUEST)
+			core.CheckTooltipFor(tip_bag, tip_slot, ITEM_BIND_QUEST)
 		then
 			return false
 		end
@@ -457,7 +458,7 @@ function core.AddMove(source, destination)
 end
 
 local moves_underway, last_itemid, lock_stop
-local STUTTER_INTERVAL, STUTTER_WAIT, PROCESSING_WAIT = 0.05, 0, 0.1
+local MOVES_PER_RUN, PROCESSING_WAIT = 5, 0.1
 local move_tracker = {}
 
 local function debugtime(start, msg) Debug("took", GetTime() - start, msg or '') end
@@ -490,6 +491,7 @@ function core.DoMoves()
 	
 	if core.dataobject then core.dataobject.text = #moves .. " moves to go" end
 	local start, success, move_id, target_id, move_source, move_target, was_guild
+	local moved = 0
 	start = GetTime()
 	if #moves > 0 then for i=#moves, 1, -1 do
 		success, move_id, move_source, target_id, move_target, was_guild = core.DoMove(moves[i])
@@ -503,6 +505,7 @@ function core.DoMoves()
 		move_tracker[move_target] = move_id
 		last_itemid = move_id
 		table.remove(moves, i)
+		moved = moved + 1
 		if moves[i-1] then
 			-- Guild bank CursorHasItem/CursorItemInfo isn't working, so slow down for it.
 			if was_guild then
@@ -515,10 +518,9 @@ function core.DoMoves()
 					return
 				end
 			end
-			if (GetTime() - start) > STUTTER_INTERVAL then
-				-- avoiding the lags
-				WAIT_TIME = STUTTER_WAIT
-				debugtime(start, "stutter-avoider")
+			if moved >= MOVES_PER_RUN then
+				WAIT_TIME = PROCESSING_WAIT
+				debugtime(start, "throttle")
 				return
 			end
 		end
