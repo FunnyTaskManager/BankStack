@@ -8,3 +8,15 @@ ESC -> Интерфейс -> Модификации -> BankStack - окно на
 /bankstack - окно настройки модификации.
 
 Для работы функции сортировки требуется наличие нескольких свободных ячеек в вашей сумке или банке, в зависимости от типа сортировки.
+
+**Скриншоты:**
+
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/1.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/2.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/3.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/4.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/5.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/6.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/7.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/8.webp)
+![](https://raw.githubusercontent.com/sirus-addons/BankStack/master/.screenshots/9.webp)
